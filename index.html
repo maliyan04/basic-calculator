@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#F4F1BB">
+<title>Calculator — by Muhammad Aliyan</title>
+<style>
+  :root{
+    --coral:#ED6A5A;
+    --coral-dark:#d9533f;
+    --cream:#F4F1BB;
+    --sage:#9BC1BC;
+    --ink:#2f2b28;
+    --muted:#8a877a;
+    --card:#ffffff;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{ height:100%; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:var(--cream);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color:var(--ink);
+    position:relative;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* decorative blobs */
+  body::before, body::after{
+    content:"";
+    position:fixed;
+    border-radius:50%;
+    filter:blur(70px);
+    opacity:.55;
+    z-index:0;
+    pointer-events:none;
+  }
+  body::before{
+    width:340px; height:340px;
+    background:var(--coral);
+    top:-120px; left:-110px;
+    opacity:.35;
+  }
+  body::after{
+    width:380px; height:380px;
+    background:var(--sage);
+    bottom:-150px; right:-130px;
+    opacity:.45;
+  }
+
+  /* =========================================================
+     SPLASH SCREEN
+     ========================================================= */
+  .splash{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:18px;
+    background:var(--cream);
+    overflow:hidden;
+    transition:opacity .6s ease, visibility .6s ease;
+  }
+  .splash::before,
+  .splash::after{
+    content:"";
+    position:absolute;
+    border-radius:50%;
+    filter:blur(60px);
+    pointer-events:none;
+  }
+  .splash::before{
+    width:300px; height:300px;
+    background:var(--coral);
+    top:-100px; left:-100px;
+    opacity:.5;
+    animation:splashFloat 3s ease-in-out infinite alternate;
+  }
+  .splash::after{
+    width:340px; height:340px;
+    background:var(--sage);
+    bottom:-120px; right:-110px;
+    opacity:.55;
+    animation:splashFloat 3s ease-in-out infinite alternate-reverse;
+  }
+
+  @keyframes splashFloat{
+    from{ transform:translate(0,0) scale(1); }
+    to{ transform:translate(20px,-20px) scale(1.08); }
+  }
+
+  .splash.hide{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+  }
+
+  .splash-logo{
+    position:relative;
+    z-index:2;
+    width:96px;
+    height:96px;
+    border-radius:28px;
+    background:linear-gradient(150deg, var(--coral) 0%, var(--coral-dark) 100%);
+    display:grid;
+    place-items:center;
+    color:#fff;
+    font-size:2.4rem;
+    font-weight:800;
+    letter-spacing:.02em;
+    box-shadow:
+      0 20px 40px -14px rgba(237,106,90,.75),
+      0 0 0 8px rgba(244,241,187,.6);
+    animation:logoIn .8s cubic-bezier(.2,.9,.3,1.2) both;
+  }
+
+  @keyframes logoIn{
+    0%  { transform:scale(.4) rotate(-12deg); opacity:0; }
+    60% { transform:scale(1.06) rotate(3deg); opacity:1; }
+    100%{ transform:scale(1) rotate(0); opacity:1; }
+  }
+
+  .splash-title{
+    position:relative;
+    z-index:2;
+    margin:0;
+    font-size:1.35rem;
+    font-weight:800;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--ink);
+    text-align:center;
+    padding:0 20px;
+    animation:fadeUp .7s ease .35s both;
+  }
+
+  .splash-sub{
+    position:relative;
+    z-index:2;
+    margin:0;
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.32em;
+    text-transform:uppercase;
+    color:var(--coral-dark);
+    opacity:.85;
+    animation:fadeUp .7s ease .55s both;
+  }
+
+  .splash-line{
+    position:relative;
+    z-index:2;
+    width:70px;
+    height:3px;
+    border-radius:999px;
+    background:var(--sage);
+    overflow:hidden;
+    margin-top:4px;
+    animation:fadeUp .7s ease .7s both;
+  }
+  .splash-line::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:var(--coral);
+    transform-origin:left center;
+    animation:loadBar 1.6s cubic-bezier(.5,.1,.2,1) .4s both;
+  }
+
+  @keyframes loadBar{
+    from{ transform:scaleX(0); }
+    to  { transform:scaleX(1); }
+  }
+
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(10px); }
+    to  { opacity:1; transform:translateY(0); }
+  }
+
+  /* ---------------- Calculator card ---------------- */
+  .app{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:390px;
+    transition:opacity .5s ease .1s;
+  }
+  body.splashing .app{ opacity:0; pointer-events:none; }
+  body:not(.splashing) .app{ opacity:1; }
+
+  .calc{
+    background:var(--card);
+    border:1px solid rgba(155,193,188,.45);
+    border-radius:28px;
+    padding:16px;
+    box-shadow:
+      0 24px 50px -22px rgba(47,43,40,.55),
+      0 2px 0 rgba(255,255,255,.8) inset;
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:2px 4px 12px;
+  }
+
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:.82rem;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink);
+    opacity:.75;
+  }
+  .brand .dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--coral);
+    box-shadow:0 0 0 3px rgba(237,106,90,.18);
+  }
+
+  .tools{ display:flex; gap:8px; }
+
+  .tool{
+    width:38px; height:38px;
+    display:grid;
+    place-items:center;
+    border-radius:13px;
+    border:1px solid rgba(155,193,188,.55);
+    background:rgba(155,193,188,.16);
+    color:var(--ink);
+    cursor:pointer;
+    padding:0;
+    transition:background .2s ease, transform .12s ease, color .2s ease, border-color .2s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .tool:active{ transform:scale(.92); }
+  .tool svg{ width:19px; height:19px; }
+
+  /* ---------------- Display ---------------- */
+  .display{
+    background:#2f2b28;
+    border-radius:20px;
+    padding:18px 18px 14px;
+    min-height:118px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    gap:6px;
+    overflow:hidden;
+    box-shadow:0 8px 22px -12px rgba(47,43,40,.9) inset;
+  }
+
+  .expr{
+    font-size:.88rem;
+    color:rgba(244,241,187,.55);
+    min-height:1.15em;
+    text-align:right;
+    word-break:break-all;
+    letter-spacing:.01em;
+    transition:color .2s;
+  }
+
+  .result{
+    font-size:3.2rem;
+    font-weight:600;
+    line-height:1.05;
+    letter-spacing:-.02em;
+    text-align:right;
+    color:var(--cream);
+    word-break:break-all;
+    transition:font-size .12s ease;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ---------------- Keys ---------------- */
+  .keys{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:10px;
+    margin-top:14px;
+  }
+
+  .key{
+    border:none;
+    border-radius:17px;
+    font-family:inherit;
+    font-size:1.35rem;
+    font-weight:600;
+    padding:16px 0;
+    cursor:pointer;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    transition:transform .08s ease, filter .15s ease, box-shadow .12s ease;
+    line-height:1;
+  }
+
+  .key:active{ transform:scale(.94); }
+
+  .key.num{
+    background:var(--sage);
+    color:#1e2f2d;
+    box-shadow:0 3px 0 rgba(47,43,40,.14);
+  }
+  .key.fn{
+    background:var(--cream);
+    color:#3d3830;
+    box-shadow:0 3px 0 rgba(47,43,40,.10);
+    font-size:1.15rem;
+  }
+  .key.op{
+    background:var(--coral);
+    color:#fff;
+    box-shadow:0 3px 0 rgba(47,43,40,.18);
+    font-size:1.5rem;
+  }
+  .key.equals{
+    background:linear-gradient(160deg, #ED6A5A 0%, #d9533f 100%);
+    color:#fff;
+    box-shadow:0 3px 0 rgba(47,43,40,.22);
+    font-size:1.5rem;
+  }
+
+  @media (hover:hover){
+    .key:hover{ filter:brightness(1.06); }
+    .tool:hover{ background:var(--sage); color:#1e2f2d; border-color:var(--sage); }
+  }
+
+  /* ---------------- Modals ---------------- */
+  .overlay{
+    position:fixed;
+    inset:0;
+    z-index:60;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    padding:0;
+    background:rgba(47,43,40,.45);
+    backdrop-filter:blur(5px);
+    -webkit-backdrop-filter:blur(5px);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+  }
+  .overlay.open{ opacity:1; pointer-events:auto; }
+
+  .sheet{
+    width:100%;
+    max-width:430px;
+    max-height:86vh;
+    background:#fff;
+    border-radius:26px 26px 0 0;
+    padding:20px 20px 22px;
+    display:flex;
+    flex-direction:column;
+    transform:translateY(24px);
+    transition:transform .32s cubic-bezier(.2,.85,.3,1);
+    box-shadow:0 -12px 40px -12px rgba(47,43,40,.5);
+  }
+  .overlay.open .sheet{ transform:translateY(0); }
+
+  @media (min-width:520px){
+    .overlay{ align-items:center; padding:20px; }
+    .sheet{ border-radius:26px; }
+  }
+
+  .sheet-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .sheet-head h3{
+    margin:0;
+    font-size:1.15rem;
+    letter-spacing:-.01em;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    gap:9px;
+  }
+  .sheet-head h3::before{
+    content:"";
+    width:9px; height:20px;
+    border-radius:6px;
+    background:var(--coral);
+    display:inline-block;
+  }
+
+  .close-btn{
+    width:34px; height:34px;
+    display:grid; place-items:center;
+    border-radius:11px;
+    border:none;
+    background:rgba(155,193,188,.2);
+    color:var(--ink);
+    cursor:pointer;
+    padding:0;
+    transition:background .2s, transform .12s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .close-btn:active{ transform:scale(.9); }
+  .close-btn svg{ width:17px; height:17px; }
+  .close-btn:hover{ background:rgba(155,193,188,.4); }
+
+  .sheet-body{
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:8px 2px;
+    flex:1;
+  }
+
+  .sheet-foot{ padding-top:12px; }
+
+  /* History list */
+  .hist-item{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:3px;
+    width:100%;
+    padding:12px 14px;
+    margin-bottom:8px;
+    border:1px solid rgba(155,193,188,.35);
+    border-radius:15px;
+    background:rgba(244,241,187,.32);
+    cursor:pointer;
+    font-family:inherit;
+    text-align:right;
+    transition:background .18s, border-color .18s, transform .1s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .hist-item:active{ transform:scale(.985); }
+  .hist-item:hover{ background:rgba(155,193,188,.28); border-color:var(--sage); }
+
+  .hist-expr{
+    font-size:.8rem;
+    color:var(--muted);
+    word-break:break-all;
+  }
+  .hist-res{
+    font-size:1.15rem;
+    font-weight:700;
+    color:var(--ink);
+    word-break:break-all;
+  }
+
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    font-size:.88rem;
+    padding:36px 10px;
+    line-height:1.6;
+  }
+  .empty span{ display:block; font-size:1.8rem; margin-bottom:6px; opacity:.6; }
+
+  /* Settings rows */
+  .setting-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:14px 2px;
+    border-bottom:1px solid #f1efe2;
+  }
+  .setting-row:last-of-type{ border-bottom:none; }
+
+  .setting-text h4{
+    margin:0 0 3px;
+    font-size:.94rem;
+    font-weight:600;
+    color:var(--ink);
+  }
+  .setting-text p{
+    margin:0;
+    font-size:.78rem;
+    line-height:1.4;
+    color:var(--muted);
+  }
+
+  /* Toggle switch */
+  .switch{
+    position:relative;
+    width:52px;
+    height:30px;
+    flex:none;
+    display:inline-block;
+  }
+  .switch input{
+    position:absolute;
+    opacity:0;
+    width:0; height:0;
+  }
+  .slider{
+    position:absolute;
+    inset:0;
+    background:#dcd9c4;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background .25s ease;
+  }
+  .slider::before{
+    content:"";
+    position:absolute;
+    width:24px; height:24px;
+    left:3px; top:3px;
+    background:#fff;
+    border-radius:50%;
+    box-shadow:0 1px 4px rgba(47,43,40,.3);
+    transition:transform .25s cubic-bezier(.3,.9,.4,1.2);
+  }
+  .switch input:checked + .slider{ background:var(--coral); }
+  .switch input:checked + .slider::before{ transform:translateX(22px); }
+  .switch input:focus-visible + .slider{ box-shadow:0 0 0 3px rgba(237,106,90,.35); }
+
+  /* Buttons */
+  .btn-ghost{
+    width:100%;
+    padding:13px;
+    border-radius:15px;
+    border:1px solid rgba(237,106,90,.45);
+    background:rgba(237,106,90,.09);
+    color:var(--coral-dark);
+    font-family:inherit;
+    font-size:.9rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .2s, transform .1s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn-ghost:hover{ background:rgba(237,106,90,.18); }
+  .btn-ghost:active{ transform:scale(.98); }
+
+  /* About */
+  .dev-card{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:16px;
+    border-radius:18px;
+    background:linear-gradient(135deg, rgba(244,241,187,.75), rgba(155,193,188,.35));
+    border:1px solid rgba(155,193,188,.5);
+    margin-bottom:16px;
+  }
+  .avatar{
+    width:56px; height:56px;
+    flex:none;
+    border-radius:18px;
+    background:var(--coral);
+    color:#fff;
+    display:grid;
+    place-items:center;
+    font-weight:800;
+    font-size:1.25rem;
+    letter-spacing:.02em;
+    box-shadow:0 6px 16px -6px rgba(237,106,90,.9);
+  }
+  .dev-card h4{
+    margin:0 0 4px;
+    font-size:1rem;
+    color:var(--ink);
+  }
+  .dev-card p{
+    margin:0;
+    font-size:.78rem;
+    color:#5f5b52;
+    line-height:1.45;
+  }
+
+  .about-text p{
+    font-size:.88rem;
+    line-height:1.65;
+    color:#4a463f;
+    margin:0 0 12px;
+  }
+  .about-text .highlight{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:8px;
+    background:rgba(155,193,188,.35);
+    font-weight:600;
+    color:#2c4a47;
+    font-size:.8rem;
+  }
+  .about-footer{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid #f1efe2;
+    text-align:center;
+    font-size:.74rem;
+    color:var(--muted);
+    letter-spacing:.03em;
+  }
+</style>
+</head>
+<body class="splashing">
+
+<!-- ============ SPLASH SCREEN ============ -->
+<div class="splash" id="splash">
+  <div class="splash-logo">A</div>
+  <h1 class="splash-title">An Aliyan Production</h1>
+  <p class="splash-sub">Crafted with logic &amp; AI</p>
+  <div class="splash-line"></div>
+</div>
+
+<div class="app">
+  <div class="calc">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span> Calculator</div>
+      <div class="tools">
+        <button class="tool" id="historyBtn" aria-label="History" title="History">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3.5 2"/>
+          </svg>
+        </button>
+        <button class="tool" id="settingsBtn" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+        <button class="tool" id="aboutBtn" aria-label="About the Developer" title="About the Developer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Display -->
+    <div class="display">
+      <div class="expr" id="expr"></div>
+      <div class="result" id="result" aria-live="polite">0</div>
+    </div>
+
+    <!-- Keys -->
+    <div class="keys" id="keys">
+      <button class="key fn" data-type="clear" aria-label="All clear">AC</button>
+      <button class="key fn" data-type="backspace" aria-label="Backspace">⌫</button>
+      <button class="key fn" data-type="percent" aria-label="Percent">%</button>
+      <button class="key op" data-type="op" data-value="÷" aria-label="Divide">÷</button>
+
+      <button class="key num" data-type="digit" data-value="7">7</button>
+      <button class="key num" data-type="digit" data-value="8">8</button>
+      <button class="key num" data-type="digit" data-value="9">9</button>
+      <button class="key op" data-type="op" data-value="×" aria-label="Multiply">×</button>
+
+      <button class="key num" data-type="digit" data-value="4">4</button>
+      <button class="key num" data-type="digit" data-value="5">5</button>
+      <button class="key num" data-type="digit" data-value="6">6</button>
+      <button class="key op" data-type="op" data-value="−" aria-label="Subtract">−</button>
+
+      <button class="key num" data-type="digit" data-value="1">1</button>
+      <button class="key num" data-type="digit" data-value="2">2</button>
+      <button class="key num" data-type="digit" data-value="3">3</button>
+      <button class="key op" data-type="op" data-value="+" aria-label="Add">+</button>
+
+      <button class="key fn" data-type="sign" aria-label="Toggle sign">+/−</button>
+      <button class="key num" data-type="digit" data-value="0">0</button>
+      <button class="key num" data-type="dot" aria-label="Decimal point">.</button>
+      <button class="key equals" data-type="equals" aria-label="Equals">=</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ HISTORY MODAL ============ -->
+<div class="overlay" id="historyModal">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+    <div class="sheet-head">
+      <h3 id="historyTitle">History</h3>
+      <button class="close-btn" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body" id="historyList"></div>
+    <div class="sheet-foot">
+      <button class="btn-ghost" id="clearHistoryBtn">Clear all history</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS MODAL ============ -->
+<div class="overlay" id="settingsModal">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="sheet-head">
+      <h3 id="settingsTitle">Settings</h3>
+      <button class="close-btn" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+
+      <div class="setting-row">
+        <div class="setting-text">
+          <h4>Haptic feedback</h4>
+          <p>Vibrate briefly on every button press (supported devices).</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="setHaptic">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-text">
+          <h4>Button sounds</h4>
+          <p>Play a soft click tone when keys are tapped.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="setSound">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-text">
+          <h4>Thousands separator</h4>
+          <p>Show large numbers as 1,234,567 for easier reading.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="setSeparators">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-ghost" id="resetSettingsBtn">Reset settings to default</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ABOUT MODAL ============ -->
+<div class="overlay" id="aboutModal">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div class="sheet-head">
+      <h3 id="aboutTitle">About the Developer</h3>
+      <button class="close-btn" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+
+      <div class="dev-card">
+        <div class="avatar">MA</div>
+        <div>
+          <h4>Muhammad Aliyan</h4>
+          <p>BSCS Student · Virtual University</p>
+        </div>
+      </div>
+
+      <div class="about-text">
+        <p>
+          I design and develop <strong>websites</strong>, <strong>Android apps</strong> &amp;
+          <strong>games</strong> with a mix of my own logic and AI assistance.
+        </p>
+        <p>
+          Always learning, always building.<br>
+          Your feedback helps me improve!
+        </p>
+        <p><span class="highlight">Open to feedback &amp; collaboration</span></p>
+      </div>
+
+      <div class="about-footer">Calculator v1.0 · Built with care</div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* =========================================================
+     SPLASH SCREEN — 2 seconds then fade out
+     ========================================================= */
+  (function splashScreen() {
+    const splash = document.getElementById('splash');
+    const body = document.body;
+
+    function hideSplash() {
+      splash.classList.add('hide');
+      body.classList.remove('splashing');
+      setTimeout(function () {
+        if (splash && splash.parentNode) {
+          splash.parentNode.removeChild(splash);
+        }
+      }, 700);
+    }
+
+    window.setTimeout(hideSplash, 2000);
+  })();
+
+  /* =========================================================
+     Safe storage helpers
+     ========================================================= */
+  const store = {
+    get(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (e) { return fallback; }
+    },
+    set(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+    }
+  };
+
+  /* =========================================================
+     Settings
+     ========================================================= */
+  const SETTINGS_KEY = 'calc_settings_v1';
+  const DEFAULTS = { haptic: true, sound: false, separators: true };
+  let settings = Object.assign({}, DEFAULTS, store.get(SETTINGS_KEY, {}));
+
+  function saveSettings() { store.set(SETTINGS_KEY, settings); }
+
+  /* =========================================================
+     History
+     ========================================================= */
+  const HISTORY_KEY = 'calc_history_v1';
+  const MAX_HISTORY = 50;
+  let history = store.get(HISTORY_KEY, []);
+  if (!Array.isArray(history)) history = [];
+
+  function saveHistory() { store.set(HISTORY_KEY, history); }
+
+  /* =========================================================
+     DOM refs
+     ========================================================= */
+  const els = {
+    expr: document.getElementById('expr'),
+    result: document.getElementById('result'),
+    keys: document.getElementById('keys'),
+    historyList: document.getElementById('historyList')
+  };
+
+  /* =========================================================
+     Calculator state
+     ========================================================= */
+  let state = { current: '0', previous: null, operator: null, waiting: false };
+  let lastExpr = '';
+
+  function resetState() {
+    state = { current: '0', previous: null, operator: null, waiting: false };
+  }
+
+  /* =========================================================
+     Number helpers
+     ========================================================= */
+  function numToStr(n) {
+    if (typeof n === 'string') n = parseFloat(n);
+    if (!isFinite(n)) return 'Error';
+    if (n === 0) return '0';
+
+    const abs = Math.abs(n);
+    if (abs >= 1e15 || abs < 1e-9) {
+      return n.toExponential(6).replace(/\.?0+e/, 'e');
+    }
+    const rounded = parseFloat(n.toPrecision(12));
+    return String(rounded);
+  }
+
+  function formatDisplay(str) {
+    if (str === undefined || str === null || str === 'Error') return 'Error';
+
+    const negative = str.startsWith('-');
+    let body = negative ? str.slice(1) : str;
+    const parts = body.split('.');
+    let intPart = parts[0];
+    const decPart = parts.length > 1 ? parts[1] : null;
+
+    if (settings.separators && !/[eE]/.test(intPart) && intPart.length > 3) {
+      intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    const out = intPart + (decPart !== null ? '.' + decPart : '');
+    return (negative ? '-' : '') + out;
+  }
+
+  /* =========================================================
+     Feedback (haptics + sound)
+     ========================================================= */
+  let audioCtx = null;
+
+  function feedback() {
+    if (settings.haptic && navigator.vibrate) {
+      try { navigator.vibrate(12); } catch (e) {}
+    }
+    if (settings.sound) beep();
+  }
+
+  function beep() {
+    try {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const t = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(720, t);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.07, t + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.1);
+    } catch (e) { /* silent */ }
+  }
+
+  /* =========================================================
+     Core math
+     ========================================================= */
+  function compute(a, op, b) {
+    let r;
+    switch (op) {
+      case '+': r = a + b; break;
+      case '−': r = a - b; break;
+      case '×': r = a * b; break;
+      case '÷': if (b === 0) return null; r = a / b; break;
+      default: return null;
+    }
+    if (!isFinite(r)) return null;
+    return parseFloat(r.toPrecision(12));
+  }
+
+  function setError() {
+    state.current = 'Error';
+    state.previous = null;
+    state.operator = null;
+    state.waiting = true;
+  }
+
+  /* =========================================================
+     Input handlers
+     ========================================================= */
+  function inputDigit(d) {
+    if (state.current === 'Error') { resetState(); lastExpr = ''; }
+
+    if (state.waiting) {
+      state.current = d;
+      state.waiting = false;
+      lastExpr = '';
+    } else {
+      if (state.current.replace(/[-.]/g, '').length >= 15) return;
+      state.current = (state.current === '0') ? d : state.current + d;
+    }
+  }
+
+  function inputDot() {
+    if (state.current === 'Error') { resetState(); lastExpr = ''; }
+
+    if (state.waiting) {
+      state.current = '0.';
+      state.waiting = false;
+      lastExpr = '';
+    } else if (state.current.indexOf('.') === -1) {
+      state.current += '.';
+    }
+  }
+
+  function clearAll() {
+    resetState();
+    lastExpr = '';
+  }
+
+  function backspace() {
+    if (state.current === 'Error') { clearAll(); return; }
+    if (state.waiting) return;
+
+    state.current = state.current.slice(0, -1);
+    if (state.current === '' || state.current === '-') state.current = '0';
+  }
+
+  function percent() {
+    if (state.current === 'Error') return;
+    const v = parseFloat(state.current);
+    if (!isFinite(v)) return;
+    state.current = numToStr(v / 100);
+    state.waiting = false;
+  }
+
+  function toggleSign() {
+    if (state.current === 'Error') return;
+    if (state.current === '0' || state.current === '0.') return;
+
+    state.current = state.current.startsWith('-')
+      ? state.current.slice(1)
+      : '-' + state.current;
+  }
+
+  function chooseOperator(op) {
+    if (state.current === 'Error') return;
+
+    const value = parseFloat(state.current);
+    if (!isFinite(value)) return;
+
+    // Operator pressed twice in a row → just swap it
+    if (state.operator !== null && state.waiting) {
+      state.operator = op;
+      return;
+    }
+
+    if (state.operator !== null && state.previous !== null) {
+      const res = compute(state.previous, state.operator, value);
+      if (res === null) { setError(); return; }
+      state.current = numToStr(res);
+      state.previous = res;
+    } else {
+      state.previous = value;
+    }
+
+    state.operator = op;
+    state.waiting = true;
+    lastExpr = '';
+  }
+
+  function equals() {
+    if (state.current === 'Error') return;
+    if (state.operator === null || state.previous === null) return;
+
+    const a = state.previous;
+    const b = parseFloat(state.current);
+    const op = state.operator;
+
+    const exprStr = formatDisplay(numToStr(a)) + ' ' + op + ' ' + formatDisplay(numToStr(b));
+    const res = compute(a, op, b);
+
+    if (res === null) {
+      lastExpr = exprStr + ' =';
+      setError();
+      return;
+    }
+
+    const resStr = numToStr(res);
+    lastExpr = exprStr + ' =';
+    state.current = resStr;
+    state.previous = null;
+    state.operator = null;
+    state.waiting = true;
+
+    addHistory(exprStr, formatDisplay(resStr), resStr);
+  }
+
+  /* =========================================================
+     Rendering
+     ========================================================= */
+  function updateDisplay() {
+    const text = formatDisplay(state.current);
+    els.result.textContent = text;
+
+    // Auto-shrink long numbers
+    const len = text.length;
+    if (len > 10) {
+      const size = Math.max(1.45, 3.2 - (len - 10) * 0.17);
+      els.result.style.fontSize = size.toFixed(2) + 'rem';
+    } else {
+      els.result.style.fontSize = '';
+    }
+
+    let sub = lastExpr;
+    if (state.operator !== null && state.previous !== null) {
+      sub = formatDisplay(numToStr(state.previous)) + ' ' + state.operator;
+    }
+    els.expr.textContent = sub;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* =========================================================
+     History
+     ========================================================= */
+  function addHistory(expr, result, raw) {
+    history.unshift({ expr: expr, result: result, raw: raw, t: Date.now() });
+    if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+    saveHistory();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    if (!history.length) {
+      els.historyList.innerHTML =
+        '<p class="empty"><span>🧮</span>No calculations yet.<br>Your results will appear here.</p>';
+      return;
+    }
+
+    els.historyList.innerHTML = history.map(function (h, i) {
+      return '<button class="hist-item" data-index="' + i + '">' +
+               '<span class="hist-expr">' + escapeHtml(h.expr) + ' =</span>' +
+               '<span class="hist-res">' + escapeHtml(h.result) + '</span>' +
+             '</button>';
+    }).join('');
+  }
+
+  /* =========================================================
+     Modals
+     ========================================================= */
+  function openModal(id) {
+    document.querySelectorAll('.overlay').forEach(function (o) {
+      o.classList.remove('open');
+    });
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModals() {
+    document.querySelectorAll('.overlay').forEach(function (o) {
+      o.classList.remove('open');
+    });
+    document.body.style.overflow = '';
+  }
+
+  /* =========================================================
+     Wire up: keys
+     ========================================================= */
+  function handleInput(type, value) {
+    switch (type) {
+      case 'digit':     inputDigit(value); break;
+      case 'dot':       inputDot(); break;
+      case 'clear':     clearAll(); break;
+      case 'backspace': backspace(); break;
+      case 'percent':   percent(); break;
+      case 'sign':      toggleSign(); break;
+      case 'op':        chooseOperator(value); break;
+      case 'equals':    equals(); break;
+      default: return;
+    }
+    updateDisplay();
+  }
+
+  els.keys.addEventListener('click', function (e) {
+    const btn = e.target.closest('button[data-type]');
+    if (!btn) return;
+    feedback();
+    handleInput(btn.dataset.type, btn.dataset.value);
+    btn.blur();
+  });
+
+  /* =========================================================
+     Wire up: keyboard
+     ========================================================= */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeModals(); return; }
+    if (document.querySelector('.overlay.open')) return;
+
+    const k = e.key;
+    let handled = true;
+
+    if (/^[0-9]$/.test(k))            handleInput('digit', k);
+    else if (k === '.')               handleInput('dot');
+    else if (k === '+')               handleInput('op', '+');
+    else if (k === '-')               handleInput('op', '−');
+    else if (k === '*' || k === 'x')  handleInput('op', '×');
+    else if (k === '/')             { e.preventDefault(); handleInput('op', '÷'); }
+    else if (k === 'Enter' || k === '=') { e.preventDefault(); handleInput('equals'); }
+    else if (k === 'Backspace')       handleInput('backspace');
+    else if (k === 'Delete')          handleInput('clear');
+    else if (k === '%')               handleInput('percent');
+    else handled = false;
+
+    if (handled) feedback();
+  });
+
+  /* =========================================================
+     Wire up: top bar buttons
+     ========================================================= */
+  document.getElementById('historyBtn').addEventListener('click', function () {
+    feedback();
+    renderHistory();
+    openModal('historyModal');
+  });
+
+  document.getElementById('settingsBtn').addEventListener('click', function () {
+    feedback();
+    openModal('settingsModal');
+  });
+
+  document.getElementById('aboutBtn').addEventListener('click', function () {
+    feedback();
+    openModal('aboutModal');
+  });
+
+  /* Close buttons + backdrop */
+  document.querySelectorAll('[data-close]').forEach(function (b) {
+    b.addEventListener('click', closeModals);
+  });
+
+  document.querySelectorAll('.overlay').forEach(function (o) {
+    o.addEventListener('click', function (e) {
+      if (e.target === o) closeModals();
+    });
+  });
+
+  /* =========================================================
+     Wire up: history actions
+     ========================================================= */
+  els.historyList.addEventListener('click', function (e) {
+    const item = e.target.closest('.hist-item');
+    if (!item) return;
+
+    const idx = parseInt(item.dataset.index, 10);
+    const entry = history[idx];
+    if (!entry) return;
+
+    feedback();
+    resetState();
+    state.current = String(entry.raw);
+    state.waiting = true;
+    lastExpr = entry.expr + ' =';
+    updateDisplay();
+    closeModals();
+  });
+
+  document.getElementById('clearHistoryBtn').addEventListener('click', function () {
+    history = [];
+    saveHistory();
+    renderHistory();
+    feedback();
+  });
+
+  /* =========================================================
+     Wire up: settings toggles
+     ========================================================= */
+  const setHaptic     = document.getElementById('setHaptic');
+  const setSound      = document.getElementById('setSound');
+  const setSeparators = document.getElementById('setSeparators');
+
+  function syncSettingsUI() {
+    setHaptic.checked     = settings.haptic;
+    setSound.checked      = settings.sound;
+    setSeparators.checked = settings.separators;
+  }
+
+  setHaptic.addEventListener('change', function () {
+    settings.haptic = setHaptic.checked;
+    saveSettings();
+    // Give instant confirmation when switched ON
+    if (settings.haptic && navigator.vibrate) {
+      try { navigator.vibrate(20); } catch (e) {}
+    }
+  });
+
+  setSound.addEventListener('change', function () {
+    settings.sound = setSound.checked;
+    saveSettings();
+    if (settings.sound) beep();
+  });
+
+  setSeparators.addEventListener('change', function () {
+    settings.separators = setSeparators.checked;
+    saveSettings();
+    feedback();
+    updateDisplay();
+  });
+
+  document.getElementById('resetSettingsBtn').addEventListener('click', function () {
+    settings = Object.assign({}, DEFAULTS);
+    saveSettings();
+    syncSettingsUI();
+    updateDisplay();
+    feedback();
+  });
+
+  /* =========================================================
+     Init
+     ========================================================= */
+  syncSettingsUI();
+  renderHistory();
+  updateDisplay();
+
+})();
+</script>
+</body>
+</html>
