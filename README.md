@@ -1,6 +1,9 @@
-# Web Calculator
+
+# Basic Calculator
 
 A modern, responsive web calculator built with vanilla HTML, CSS, and JavaScript. It features a sleek UI, calculation history, developer information, and customizable settings like haptic feedback and button sounds.
+
+🔗 **Live Demo:** [https://maliyan04.github.io/basic-calculator/](https://maliyan04.github.io/basic-calculator/)
 
 ## ✨ Features
 
@@ -30,4 +33,4 @@ Since this is a single-file project, no build tools or installation are required
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/maliyan04/web-calculator.git
+   git clone https://github.com/maliyan04/basic-calculator.git
